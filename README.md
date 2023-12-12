@@ -1,4 +1,7 @@
-# ControlNet for Stable Diffusion WebUI
+# OpenPoseless ControlNet for Stable Diffusion WebUI
+
+OpenPose has been removed from the original project (https://github.com/Mikubill/sd-webui-controlnet) for improve performance.
+
 
 The WebUI extension for ControlNet and other injection-based SD controls.
 

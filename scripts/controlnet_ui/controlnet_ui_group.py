@@ -21,7 +21,6 @@ from scripts.processor import (
     HWC3,
 )
 from scripts.logging import logger
-from scripts.controlnet_ui.openpose_editor import OpenposeEditor
 from scripts.controlnet_ui.preset import ControlNetPresetUI
 from scripts.controlnet_ui.tool_button import ToolButton
 from modules import shared
@@ -144,7 +143,6 @@ class ControlNetUiGroup(object):
         self.resize_mode = None
         self.loopback = None
         self.use_preview_as_input = None
-        self.openpose_editor = None
         self.preset_panel = None
         self.upload_independent_img_in_img2img = None
         self.image_upload_panel = None
@@ -166,7 +164,6 @@ class ControlNetUiGroup(object):
         Returns:
             None
         """
-        self.openpose_editor = OpenposeEditor()
         
         with gr.Group(visible=not is_img2img) as self.image_upload_panel:
             self.save_detected_map = gr.Checkbox(value=True, visible=False)
@@ -188,7 +185,6 @@ class ControlNetUiGroup(object):
                                 )
                                 else None,
                             )
-                            self.openpose_editor.render_upload()
                             
                         with gr.Group(
                             visible=False, elem_classes=["cnet-generated-image-group"]
@@ -205,7 +201,6 @@ class ControlNetUiGroup(object):
                             with gr.Group(
                                 elem_classes=["cnet-generated-image-control-group"]
                             ):
-                                self.openpose_editor.render_edit()
                                 preview_check_elem_id = f"{elem_id_tabname}_{tabname}_controlnet_preprocessor_preview_checkbox"
                                 preview_close_button_js = f"document.querySelector('#{preview_check_elem_id} input[type=\\'checkbox\\']').click();"
                                 gr.HTML(
@@ -642,7 +637,6 @@ class ControlNetUiGroup(object):
                 return (
                     gr.update(value=None, visible=True),
                     gr.update(),
-                    *self.openpose_editor.update(""),
                 )
 
             img = HWC3(image["image"])
@@ -681,10 +675,7 @@ class ControlNetUiGroup(object):
 
             logger.info(f"Preview Resolution = {pres}")
 
-            def is_openpose(module: str):
-                return "openpose" in module
-
-            # Only openpose preprocessor returns a JSON output, pass json_acceptor
+            # pass json_acceptor
             # only when a JSON output is expected. This will make preprocessor cache
             # work for all other preprocessors other than openpose ones. JSON acceptor
             # instance are different every call, which means cache will never take
@@ -696,9 +687,7 @@ class ControlNetUiGroup(object):
                 res=pres,
                 thr_a=pthr_a,
                 thr_b=pthr_b,
-                json_pose_callback=json_acceptor.accept
-                if is_openpose(module)
-                else None,
+                json_pose_callback=json_acceptor.accept,
             )
 
             if not is_image:
@@ -711,8 +700,6 @@ class ControlNetUiGroup(object):
                 gr.update(value=result, visible=True, interactive=False),
                 # preprocessor_preview
                 gr.update(value=True),
-                # openpose editor
-                *self.openpose_editor.update(json_acceptor.value),
             )
 
         self.trigger_preprocessor.click(
@@ -735,7 +722,6 @@ class ControlNetUiGroup(object):
             outputs=[
                 self.generated_image,
                 self.preprocessor_preview,
-                *self.openpose_editor.outputs(),
             ],
         )
 
@@ -760,9 +746,7 @@ class ControlNetUiGroup(object):
             outputs=[
                 self.generated_image,
                 self.generated_image_group,
-                self.use_preview_as_input,
-                self.openpose_editor.download_link,
-                self.openpose_editor.modal,
+                self.use_preview_as_input
             ],
             show_progress=False
         )
@@ -834,10 +818,7 @@ class ControlNetUiGroup(object):
         self.register_run_annotator(is_img2img)
         self.register_shift_preview()
         self.register_create_canvas()
-        self.openpose_editor.register_callbacks(
-            self.generated_image, self.use_preview_as_input,
-            self.model,
-        )
+
         assert self.type_filter is not None
         self.preset_panel.register_callbacks(
             self,
